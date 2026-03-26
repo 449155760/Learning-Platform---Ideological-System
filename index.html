@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>党建知识图谱可视化系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: "Microsoft YaHei", sans-serif; background-color: #f4f4f4; overflow: hidden; }
+        #header { height: 60px; background: #c1272d; color: white; line-height: 60px; text-align: center; font-size: 24px; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+
+        #container { display: flex; height: calc(100vh - 60px); }
+        #main { flex: 1; background: #fff; }
+
+        /* 详情侧边栏样式 */
+        #details { width: 350px; background: #fff; border-left: 1px solid #ddd; padding: 20px; overflow-y: auto; box-shadow: -2px 0 10px rgba(0,0,0,0.05); }
+        .detail-title { color: #c1272d; font-size: 20px; border-bottom: 2px solid #c1272d; padding-bottom: 10px; margin-bottom: 15px; }
+        .detail-content { font-size: 14px; line-height: 1.8; color: #333; white-space: pre-wrap; }
+        .tag { display: inline-block; padding: 2px 8px; background: #eee; border-radius: 4px; font-size: 12px; margin-bottom: 10px; color: #666; }
+
+        /* 悬浮提示框样式优化 */
+        .tooltip-box { padding: 10px; line-height: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="header">习近平新时代中国特色社会主义思想知识图谱</div>
+
+<div id="container">
+    <div id="main"></div>
+
+    <div id="details">
+        <div class="detail-title" id="info-title">节点详情</div>
+        <div id="info-tag" class="tag">等待选择...</div>
+        <div class="detail-content" id="info-content">请在左侧点击任何一个圆圈节点，查看 DeepSeek 提取的详细资料。</div>
+    </div>
+</div>
+
+<script>
+    var chartDom = document.getElementById('main');
+    var myChart = echarts.init(chartDom);
+
+    // 设置加载动画
+    myChart.showLoading();
+
+    // 从后端 API 获取数据
+    fetch('http://127.0.0.1:8000/get_graph')
+        .then(res => res.json())
+        .then(data => {
+            myChart.hideLoading();
+
+            var option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        if (params.dataType === 'node') {
+                            return `<div class="tooltip-box"><b>名称:</b> ${params.data.name}<br><b>类型:</b> ${params.data.category}</div>`;
+                        }
+                    }
+                },
+                legend: [{
+                    data: ['Ideology', 'Category', 'Article', 'Point'],
+                    orient: 'vertical',
+                    left: 'left',
+                    top: '20'
+                }],
+                series: [{
+                    type: 'graph',
+                    layout: 'force',
+                    data: data.nodes,
+                    links: data.links,
+                    categories: [
+                        { name: 'Ideology', itemStyle: { color: '#ff0000' } },
+                        { name: 'Category', itemStyle: { color: '#ff9900' } },
+                        { name: 'Article', itemStyle: { color: '#0099ff' } },
+                        { name: 'Point', itemStyle: { color: '#00cc66' } }
+                    ],
+                    roam: true,
+                    label: {
+                        show: true,
+                        position: 'right',
+                        fontSize: 12
+                    },
+                    force: {
+                        repulsion: 400,
+                        edgeLength: [50, 150],
+                        gravity: 0.1
+                    },
+                    lineStyle: {
+                        color: 'source',
+                        curveness: 0.2,
+                        width: 1.5
+                    },
+                    emphasis: {
+                        focus: 'adjacency',
+                        lineStyle: { width: 4 }
+                    }
+                }]
+            };
+
+            myChart.setOption(option);
+
+            // --- 核心交互：点击节点更新右侧详情栏 ---
+            myChart.on('click', function (params) {
+                if (params.dataType === 'node') {
+                    document.getElementById('info-title').innerText = params.data.name;
+                    document.getElementById('info-tag').innerText = "类型: " + params.data.category;
+
+                    // 显示后端传过来的 value (即 content 或 summary)
+                    var content = params.data.value || "暂无详细描述";
+                    document.getElementById('info-content').innerText = content;
+                }
+            });
+        })
+        .catch(err => {
+            console.error("无法加载数据:", err);
+            alert("后端服务未启动或跨域配置错误，请检查 8000 端口。");
+        });
+
+    // 响应式窗口调整
+    window.onresize = function() {
+        myChart.resize();
+    };
+</script>
+
+</body>
+</html>
