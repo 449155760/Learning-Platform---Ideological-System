@@ -1,6 +1,6 @@
 启动 Neo4j：确保数据库是绿色 Active 状态。
 
-启动后端：uvicorn main_api:app --reload（你已经做到了）。
+启动后端：uvicorn main_api:app --reload 。
 
 刷新数据：访问 http://127.0.0.1:8000/get_graph 确认有 JSON。
 
