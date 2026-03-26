@@ -5,3 +5,5 @@
 刷新数据：访问 http://127.0.0.1:8000/get_graph 确认有 JSON。
 
 运行前端：在 PyCharm 里通过右上角浏览器图标打开 index.html。
+
+![img_1.png](img_1.png)
